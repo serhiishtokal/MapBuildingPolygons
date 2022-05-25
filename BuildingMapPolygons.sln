@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildingMapPolygons", "BuildingMapPolygons\BuildingMapPolygons.csproj", "{B2ED97F8-A771-4AE3-B9BE-7D0339C14C1F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B2ED97F8-A771-4AE3-B9BE-7D0339C14C1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2ED97F8-A771-4AE3-B9BE-7D0339C14C1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2ED97F8-A771-4AE3-B9BE-7D0339C14C1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2ED97F8-A771-4AE3-B9BE-7D0339C14C1F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5775B0FF-6D1D-4FF5-BF32-6529CECA8E86}
+	EndGlobalSection
+EndGlobal
