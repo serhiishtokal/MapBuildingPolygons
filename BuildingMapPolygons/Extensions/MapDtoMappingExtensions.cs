@@ -1,25 +1,26 @@
 ﻿using BuildingMapPolygons.Domain;
 using BuildingMapPolygons.Domain.Dtos;
+using BuildingMapPolygons.Domain.Enums;
 using System.Data;
 
-namespace BuildingMapPolygons.Services
+namespace WeatherServiceApp.Extensions
 {
     internal static class MapDtoMappingExtensions
     {
-        const string ELEMENT_TYPE_RELATION = "relation";
-        const string ELEMENT_TYPE_WAY = "way";
-        const string WAY_ROLE_INNER = "inner";
-        const string WAY_ROLE_OUTER = "outer";
-        const string TAG_BUILDING = "building";
-        const string TAG_VALUE_YES = "yes";
+        private const string ELEMENT_TYPE_RELATION = "relation";
+        private const string ELEMENT_TYPE_WAY = "way";
+        private const string WAY_ROLE_INNER = "inner";
+        private const string WAY_ROLE_OUTER = "outer";
+        private const string TAG_BUILDING = "building";
+        private const string TAG_VALUE_YES = "yes";
 
-        public static Coordinate MapToCoordinate(this MapElementDto node)
+        private static Coordinate MapToCoordinate(this MapElementDto node)
         {
             var coordinate = new Coordinate(node.Id, node.Lat!.Value, node.Lon!.Value);
             return coordinate;
         }
 
-        public static BuildingPolygon MapToBuildingPolygon(this RelationMemberDto relationMember, Dictionary<long, MapElementDto> allElementsDictionary)
+        private static BuildingPolygon MapToBuildingPolygon(this RelationMemberDto relationMember, Dictionary<long, MapElementDto> allElementsDictionary)
         {
             var way = allElementsDictionary[relationMember.Ref];
 
@@ -33,7 +34,7 @@ namespace BuildingMapPolygons.Services
             return result;
         }
 
-        public static BuildingPolygon MapToBuildingPolygon(this MapElementDto way, MemberRole role, Dictionary<long, MapElementDto> allElementsDictionary)
+        private static BuildingPolygon MapToBuildingPolygon(this MapElementDto way, MemberRole role, Dictionary<long, MapElementDto> allElementsDictionary)
         {
             var nodes = way.Nodes
                 .Select(wayNodeId => allElementsDictionary[wayNodeId])
@@ -45,7 +46,7 @@ namespace BuildingMapPolygons.Services
         }
 
 
-        public static Building MapToBuilding(this MapElementDto relationOrWay, Dictionary<long, MapElementDto> allElementsDictionary)
+        private static Building MapToBuilding(this MapElementDto relationOrWay, Dictionary<long, MapElementDto> allElementsDictionary)
         {
             Building building;
 

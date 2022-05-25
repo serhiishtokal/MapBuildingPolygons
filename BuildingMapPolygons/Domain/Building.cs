@@ -1,4 +1,6 @@
-﻿namespace BuildingMapPolygons.Domain
+﻿using BuildingMapPolygons.Domain.Enums;
+
+namespace BuildingMapPolygons.Domain
 {
     internal class Building
     {
@@ -39,11 +41,5 @@
             Latitude = latitude;
             Longitude = longitude;
         }
-    }
-
-    enum BuildingType
-    {
-        Relation,
-        Way
     }
 }

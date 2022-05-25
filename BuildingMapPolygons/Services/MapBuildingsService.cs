@@ -7,7 +7,6 @@ using System.Collections.Specialized;
 using System.Net.Http.Headers;
 using System.Web;
 using WeatherServiceApp.Extensions;
-using Coordinate = BuildingMapPolygons.Domain.Coordinate;
 
 namespace BuildingMapPolygons.Services
 {
@@ -21,6 +20,7 @@ namespace BuildingMapPolygons.Services
         private const string BASE_API_ADDRESS = "https://www.openstreetmap.org/api/0.6/";
         private const string WAY_REQUEST = "way/{0}";
         private const string MAP_REQUEST = "map";
+        private const string MAP_REQUEST_PARAMETERS_BBOX = "bbox";
 
         private readonly HttpClient _client;
         public MapBuildingsService()
@@ -56,29 +56,8 @@ namespace BuildingMapPolygons.Services
             return response;
         }
 
-        //public async Task<HttpResponseMessage> GetWayAsync(int wayId = 483754843)
-        //{
-        //    var requestUri = CreateRequestUri(string.Format(WAY_REQUEST, wayId));
-        //    HttpResponseMessage response = await _client.GetAsync(requestUri);
-
-        //    var responseJson = await response.Content.ReadAsStringAsync();
-
-        //    var settings = new JsonSerializerSettings
-        //    {
-        //        ContractResolver = new DefaultContractResolver
-        //        {
-        //            NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = true }
-        //        },
-        //        Formatting = Formatting.Indented
-        //    };
-
-        //    var result = JsonConvert.DeserializeObject<object>(responseJson, settings);
-        //    return response;
-        //}
-
         public async Task<Building[]> GetMapBuildingsAsync(double latitude, double longitude, double radiusM)
         {
-
             var map = await GetMapAsync(latitude, longitude, radiusM);
             var buildings = map.MapToBuildings();
             return buildings;
@@ -88,7 +67,7 @@ namespace BuildingMapPolygons.Services
         {
             CoordinateBoundaries mapBoundaries = new CoordinateBoundaries(latitude, longitude, radiusM, DistanceUnit.Meters);
             var paramsDict = new Dictionary<string, string>();
-            paramsDict["bbox"] = $"{mapBoundaries.MinLongitude},{mapBoundaries.MinLatitude},{mapBoundaries.MaxLongitude},{mapBoundaries.MaxLatitude}";
+            paramsDict[MAP_REQUEST_PARAMETERS_BBOX] = $"{mapBoundaries.MinLongitude},{mapBoundaries.MinLatitude},{mapBoundaries.MaxLongitude},{mapBoundaries.MaxLatitude}";
             var requestUri = CreateRequestUri(MAP_REQUEST, paramsDict);
 
             using var response = await GetAsync(requestUri.ToString());
