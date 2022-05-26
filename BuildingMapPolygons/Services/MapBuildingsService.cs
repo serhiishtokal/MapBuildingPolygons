@@ -1,5 +1,6 @@
 ﻿using BuildingMapPolygons.Domain;
 using BuildingMapPolygons.Domain.Dtos;
+using BuildingMapPolygons.Helpers;
 using Geolocation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -12,7 +13,8 @@ namespace BuildingMapPolygons.Services
 {
     internal interface IBuildingsPolygonsMapService
     {
-        Task<Building[]> GetMapBuildingsAsync(double latitude, double longitude, double radiusM);
+        Task<Building<GeoCoordinate>[]> GetMapBuildingsWithGeoCoordinatesAsync(double latitude, double longitude, double radiusM);
+        Task<Building<MercatorCoordinate>[]> GetMapBuildingsWithMercatorCoordinatesAsync(double x, double y, double radiusM);
     }
 
     internal class MapBuildingsService : IBuildingsPolygonsMapService
@@ -49,28 +51,20 @@ namespace BuildingMapPolygons.Services
             return uriReult;
         }
 
-        private async Task<HttpResponseMessage> GetAsync(string url)
+        private async Task<HttpResponseMessage> GetRequestAsync(string url)
         {
             HttpResponseMessage response = await _client.GetAsync(url);
             if (!response.IsSuccessStatusCode) throw new Exception(response.StatusCode.ToString());
             return response;
         }
-
-        public async Task<Building[]> GetMapBuildingsAsync(double latitude, double longitude, double radiusM)
-        {
-            var map = await GetMapAsync(latitude, longitude, radiusM);
-            var buildings = map.MapToBuildings();
-            return buildings;
-        }
-
         public async Task<MapDto> GetMapAsync(double latitude, double longitude, double radiusM)
         {
             CoordinateBoundaries mapBoundaries = new CoordinateBoundaries(latitude, longitude, radiusM, DistanceUnit.Meters);
             var paramsDict = new Dictionary<string, string>();
             paramsDict[MAP_REQUEST_PARAMETERS_BBOX] = $"{mapBoundaries.MinLongitude},{mapBoundaries.MinLatitude},{mapBoundaries.MaxLongitude},{mapBoundaries.MaxLatitude}";
             var requestUri = CreateRequestUri(MAP_REQUEST, paramsDict);
-
-            using var response = await GetAsync(requestUri.ToString());
+            Console.WriteLine(requestUri.ToString());
+            using var response = await GetRequestAsync(requestUri.ToString());
 
             var mapJson = await response.Content.ReadAsStringAsync();
 
@@ -89,5 +83,19 @@ namespace BuildingMapPolygons.Services
             return result!;
         }
 
+        public async Task<Building<GeoCoordinate>[]> GetMapBuildingsWithGeoCoordinatesAsync(double latitude, double longitude, double radiusM)
+        {
+            var map = await GetMapAsync(latitude, longitude, radiusM);
+            var buildings = map.MapToBuildings(MapDtoMappingExtensions.MapToGeoCoordinate);
+            return buildings;
+        }
+
+        public async Task<Building<MercatorCoordinate>[]> GetMapBuildingsWithMercatorCoordinatesAsync(double x, double y, double radiusM)
+        {
+            (double latitude, double longitude) = SphericalMercator.ToGeoCoord(x, y);
+            var map = await GetMapAsync(latitude, longitude, radiusM);
+            var buildings = map.MapToBuildings(MapDtoMappingExtensions.MapToMercatorCoordinate);
+            return buildings;
+        }
     }
 }

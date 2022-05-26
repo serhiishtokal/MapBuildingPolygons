@@ -1,6 +1,7 @@
 ﻿using BuildingMapPolygons.Domain;
 using BuildingMapPolygons.Domain.Dtos;
 using BuildingMapPolygons.Domain.Enums;
+using BuildingMapPolygons.Helpers;
 using System.Data;
 
 namespace WeatherServiceApp.Extensions
@@ -14,52 +15,59 @@ namespace WeatherServiceApp.Extensions
         private const string TAG_BUILDING = "building";
         private const string TAG_VALUE_YES = "yes";
 
-        private static Coordinate MapToCoordinate(this MapElementDto node)
+        public static GeoCoordinate MapToGeoCoordinate(this MapElementDto node)
         {
-            var coordinate = new Coordinate(node.Id, node.Lat!.Value, node.Lon!.Value);
+            var coordinate = new GeoCoordinate(node.Id, node.Lat!.Value, node.Lon!.Value);
             return coordinate;
         }
 
-        private static BuildingPolygon MapToBuildingPolygon(this RelationMemberDto relationMember, Dictionary<long, MapElementDto> allElementsDictionary)
+        public static MercatorCoordinate MapToMercatorCoordinate(this MapElementDto node)
+        {
+            var (x, y) = SphericalMercator.ToPixel(node.Lat!.Value, node.Lon!.Value);
+            var coordinate = new MercatorCoordinate(node.Id, x, y);
+            return coordinate;
+        }
+
+        private static BuildingPolygon<T> MapToBuildingPolygon<T>(this RelationMemberDto relationMember, Dictionary<long, MapElementDto> allElementsDictionary, Func<MapElementDto, T> coordinateSelector) where T : ICoordinate
         {
             var way = allElementsDictionary[relationMember.Ref];
 
             var nodes = way.Nodes
                 .Select(wayNodeId => allElementsDictionary[wayNodeId])
-                .Select(node => node.MapToCoordinate())
+                .Select(node => coordinateSelector(node))
                 .ToArray();
 
             var role = relationMember.Role == WAY_ROLE_OUTER ? MemberRole.Outer : MemberRole.Inner;
-            var result = new BuildingPolygon(way.Id, role, nodes);
+            var result = new BuildingPolygon<T>(way.Id, role, nodes);
             return result;
         }
 
-        private static BuildingPolygon MapToBuildingPolygon(this MapElementDto way, MemberRole role, Dictionary<long, MapElementDto> allElementsDictionary)
+        private static BuildingPolygon<T> MapToBuildingPolygon<T>(this MapElementDto way, MemberRole role, Dictionary<long, MapElementDto> allElementsDictionary, Func<MapElementDto, T> coordinateSelector) where T : ICoordinate
         {
             var nodes = way.Nodes
                 .Select(wayNodeId => allElementsDictionary[wayNodeId])
-                .Select(node => node.MapToCoordinate())
+                .Select(node => coordinateSelector(node))
                 .ToArray();
 
-            var result = new BuildingPolygon(way.Id, role, nodes);
+            var result = new BuildingPolygon<T>(way.Id, role, nodes);
             return result;
         }
 
 
-        private static Building MapToBuilding(this MapElementDto relationOrWay, Dictionary<long, MapElementDto> allElementsDictionary)
+        private static Building<T> MapToBuilding<T>(this MapElementDto relationOrWay, Dictionary<long, MapElementDto> allElementsDictionary, Func<MapElementDto, T> coordinateSelector) where T : ICoordinate
         {
-            Building building;
+            Building<T> building;
 
             switch (relationOrWay.Type)
             {
                 case ELEMENT_TYPE_WAY:
-                    building = new Building(relationOrWay.Id, BuildingType.Way, new BuildingPolygon[] { relationOrWay.MapToBuildingPolygon(MemberRole.Outer, allElementsDictionary) });
+                    building = new Building<T>(relationOrWay.Id, BuildingType.Way, new BuildingPolygon<T>[] { relationOrWay.MapToBuildingPolygon<T>(MemberRole.Outer, allElementsDictionary, coordinateSelector) });
                     break;
                 case ELEMENT_TYPE_RELATION:
                     var buildingPolygons = relationOrWay.Members
-                        .Select(member => member.MapToBuildingPolygon(allElementsDictionary))
+                        .Select(member => member.MapToBuildingPolygon(allElementsDictionary, coordinateSelector))
                         .ToArray();
-                    building = new Building(relationOrWay.Id, BuildingType.Relation, buildingPolygons);
+                    building = new Building<T>(relationOrWay.Id, BuildingType.Relation, buildingPolygons);
                     break;
 
                 default:
@@ -69,21 +77,16 @@ namespace WeatherServiceApp.Extensions
             return building;
         }
 
-        public static Building[] MapToBuildings(this MapDto mapDto)
+        public static Building<T>[] MapToBuildings<T>(this MapDto mapDto, Func<MapElementDto,T> coordinateSelector) where T : ICoordinate
         {
             var elementsDictionary = mapDto.Elements.ToDictionary(x => x.Id);
-
             var buildingElementDtos = mapDto.Elements
                 .Where(x =>
                 {
                     var hasBuildingTag = x.Tags.TryGetValue(TAG_BUILDING, out string? yesValue);
-                    if (yesValue != null && yesValue == TAG_VALUE_YES)
-                    {
-                        return true;
-                    }
-                    return false;
+                    return (yesValue != null && yesValue == TAG_VALUE_YES);
                 })
-                .Select(buildingElementDto => buildingElementDto.MapToBuilding(elementsDictionary))
+                .Select(buildingElementDto => buildingElementDto.MapToBuilding(elementsDictionary, coordinateSelector))
                 .ToArray();
             return buildingElementDtos;
         }
